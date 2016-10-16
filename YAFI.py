@@ -10,6 +10,7 @@ class YAFI:
         price_obj = api_wrapper.getCurrentStockPrice("AAPL")
         print(price_obj.getParamList())
         print(price_obj.getData("price"))
+        print("test")
 
 if __name__ == "__main__":
     yafi = YAFI()
