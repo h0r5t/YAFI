@@ -24,3 +24,10 @@ class YAFIObjectCurrentStockPrice(YAFIObject):
         param_list = ["symbol", "name", "price", "time"]
         YAFIObject.setParameterNames(self, param_list)
         YAFIObject.parse(self, unnamed_list)
+
+class YAFIObjectHistoricalComponents(YAFIObject):
+
+    def __init__(self, unnamed_list):
+        param_list = ["symbol", "name", "price", "time"]
+        YAFIObject.setParameterNames(self, param_list)
+        YAFIObject.parse(self, unnamed_list)
