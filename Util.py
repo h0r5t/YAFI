@@ -9,6 +9,18 @@ def loadSP500Symbols():
         list_of_symbols.append(element["symbol"])
     return list_of_symbols
 
+def removeCommasInQuotes(text):
+    index = 0
+    inQuote = False
+    for char in text:
+        if char == '"':
+            inQuote = not inQuote
+        elif char == ',':
+            if inQuote:
+                text = text[:index] + "-" + text[index + 1:]
+        index += 1
+    return text
+
 class UtilDate():
 
     def __init__(self, year, month, day):
@@ -26,4 +38,4 @@ class UtilDate():
         return self.day
 
     def getString(self):
-        return("" + self.year + "-" + self.month + "-" + self.day) 
+        return("" + self.year + "-" + self.month + "-" + self.day)

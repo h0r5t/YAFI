@@ -56,6 +56,7 @@ class YAFIApiWrapper:
         return Util.loadSP500Symbols()
 
     def getDictFromCsvString(self, text):
+        text = Util.removeCommasInQuotes(text)
         split = text.split(',')
 
         dict1 = {}
