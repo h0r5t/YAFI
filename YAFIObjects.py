@@ -2,6 +2,7 @@
 class YAFIObject:
 
     def parse(self, unnamed_list):
+        self.unnamed_list = unnamed_list
         self.named_dict = {}
         counter = 0
         for element in unnamed_list:
@@ -17,11 +18,26 @@ class YAFIObject:
     def getData(self, parameter):
         return self.named_dict[parameter]
 
+    def getAsString(self):
+        string = ""
+        for a in self.unnamed_list:
+            string += str(a)
+            string += ","
+        string = string[:-1]
+        return string
+
 
 class YAFIObjectCurrentStockPrice(YAFIObject):
 
     def __init__(self, unnamed_list):
         param_list = ["symbol", "name", "price", "time"]
+        YAFIObject.setParameterNames(self, param_list)
+        YAFIObject.parse(self, unnamed_list)
+
+class YAFIObjectHistoricalPrice(YAFIObject):
+
+    def __init__(self, unnamed_list):
+        param_list = ["date", "open", "low", "high", "close", "volume", "adj_close"]
         YAFIObject.setParameterNames(self, param_list)
         YAFIObject.parse(self, unnamed_list)
 
