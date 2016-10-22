@@ -59,7 +59,7 @@ class Depot:
         else:
             self.loadPortfolios()
             self.info_obj = self.loadInfo()
-            self.cash = self.info_obj.getData("cash")
+            self.cash = float(self.info_obj.getData("cash"))
 
     def save(self):
         info_filename = Util.getDepotInfoFile(self.name)
@@ -118,7 +118,6 @@ class Portfolio:
     def calculatePrice(self, symbol, amount):
         price = float(self.depot.getApiWrapper().getAdjustedPriceForDate(symbol, self.getCurrentDate()))
         price = price * amount
-        print(price)
         return price
 
     def buy(self, symbol, amount):
@@ -126,6 +125,7 @@ class Portfolio:
         success = self.depot.adjustCash(-price)
         if success == False:
             print("!!! cant make purchase: cash=" + Util.floatToStr(self.depot.getCash()) + " ,price=" + Util.floatToStr(price))
+            return False
         else:
             print("made purchase: cash=" + Util.floatToStr(self.depot.getCash()) + " ,price=" + Util.floatToStr(price))
 
@@ -140,6 +140,8 @@ class Portfolio:
     def sell(self, symbol, amount):
         price = self.calculatePrice(symbol, amount)
         success = self.depot.adjustCash(price)
+        if success == False:
+            return False
 
         if symbol in self.position_dict:
             position = self.position_dict[symbol]

@@ -113,7 +113,7 @@ def loadPositionHistory(depot_name, portfolio_name, symbol):
         for key in csv_dict:
             api_obj = YAFIObjects.YAFIObjectPositionHistoryAction(csv_dict[key])
             date = parseDateString(api_obj.getData("date"))
-            action_obj = SimEnv.PositionHistoryAction(date, api_obj.getData("action_string"), api_obj.getData("amount"))
+            action_obj = SimEnv.PositionHistoryAction(date, api_obj.getData("action_string"), api_obj.getData("amount"), api_obj.getData("price"))
             list_of_actions.append(action_obj)
         return SimEnv.PositionHistory(symbol, list_of_actions)
     else:
@@ -123,7 +123,7 @@ def getFileList(path):
     return os.listdir(path)
 
 def floatToStr(number):
-    return "{:.2f}".format(number) 
+    return "{:.2f}".format(number)
 
 class UtilDate():
 

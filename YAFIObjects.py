@@ -50,7 +50,7 @@ class YAFIObjectHistoricalComponents(YAFIObject):
 class YAFIObjectPositionHistoryAction(YAFIObject):
 
     def __init__(self, unnamed_list):
-        param_list = ["date", "action_string", "amount"]
+        param_list = ["date", "action_string", "amount", "price"]
         YAFIObject.setParameterNames(self, param_list)
         YAFIObject.parse(self, unnamed_list)
 
