@@ -2,30 +2,25 @@ import os
 import Algorithm
 import Util
 import YAFIObjects
+import shutil
 
 class SimEnv:
 
-    def __init__(self, start_date):
+    def __init__(self):
+        self.current_date = None
+
+    def simulateAlgorithm(self, algo, start_date, end_date, interval):
+
+        algo.prepare()
+
         self.current_date = start_date
-        self.depot = Depot(self, "depot1")
-        self.portfolio1 = Portfolio(self, self.depot, "portfolio1")
-        self.depot.addPortfolio(self.portfolio1)
-        self.portfolio1.buy("AAPL", 3)
-        self.portfolio1.buy("MSFT", 4)
-        self.current_date = self.current_date.getNextDayDate()
-        self.portfolio1.buy("AAPL", 3)
-        self.portfolio1.buy("MSFT", 4)
-        print(self.portfolio1.getPosition("AAPL").getCurrentAmount())
-        self.depot.save()
+        while True:
+            algo.doLogic(self.current_date)
+            self.current_date = self.current_date.getAfterDate(interval)
+            if self.current_date > end_date:
+                break
 
-    def simulateAlgorithm(self, algo, start_date, end_date):
-        pass
-
-    def buy(self, symbol, amount):
-        pass
-
-    def sell(self, symbol, amount):
-        pass
+        algo.cleanUp()
 
     def getCurrentDate(self):
         return self.current_date
@@ -39,16 +34,20 @@ class Depot:
     # /depot/portfolio/BBB.posh
     # /depot/portfolio/...
 
-    def __init__(self, sim_env, name):
+    def __init__(self, sim_env, api_wrapper, name, cash):
         self.sim_env = sim_env
+        self.api_wrapper = api_wrapper
         self.name = name
         self.portfolios = []
-        self.info_obj = None
-        self.cash = 0
+        self.info_obj = YAFIObjects.YAFIObjectDepotInfo([0])
+        self.cash = cash
         self.loadStuff()
 
     def getName(self):
         return self.name
+
+    def getApiWrapper(self):
+        return self.api_wrapper
 
     def addPortfolio(self, portfolio):
         self.portfolios.append(portfolio)
@@ -57,8 +56,6 @@ class Depot:
         foldername = Util.getDepotFolder(self.name)
         if not os.path.exists(foldername):
             os.makedirs(foldername)
-            self.info_obj = YAFIObjects.YAFIObjectDepotInfo([0])
-            self.cash = 0
         else:
             self.loadPortfolios()
             self.info_obj = self.loadInfo()
@@ -67,6 +64,7 @@ class Depot:
     def save(self):
         info_filename = Util.getDepotInfoFile(self.name)
         fileh = open(info_filename, "w")
+        self.info_obj = YAFIObjects.YAFIObjectDepotInfo([self.cash])
         fileh.write(self.info_obj.getAsString())
 
         for portfolio in self.portfolios:
@@ -79,6 +77,20 @@ class Depot:
 
     def loadInfo(self):
         return Util.loadDepotInfo(self.name)
+
+    def adjustCash(self, amount):
+        if (self.cash + amount) < 0:
+            return False
+        self.cash += amount
+        return True
+
+    def getCash(self):
+        return self.cash
+
+    def removePortfolio(self, portfolio):
+        filename = Util.getPortfolioFolder(self.name, portfolio.getName())
+        self.portfolios.remove(portfolio)
+        shutil.rmtree(filename)
 
 class Portfolio:
 
@@ -103,21 +115,39 @@ class Portfolio:
         for key in self.position_dict:
             self.position_dict[key].save()
 
+    def calculatePrice(self, symbol, amount):
+        price = float(self.depot.getApiWrapper().getAdjustedPriceForDate(symbol, self.getCurrentDate()))
+        price = price * amount
+        print(price)
+        return price
+
     def buy(self, symbol, amount):
+        price = self.calculatePrice(symbol, amount)
+        success = self.depot.adjustCash(-price)
+        if success == False:
+            print("!!! cant make purchase: cash=" + Util.floatToStr(self.depot.getCash()) + " ,price=" + Util.floatToStr(price))
+        else:
+            print("made purchase: cash=" + Util.floatToStr(self.depot.getCash()) + " ,price=" + Util.floatToStr(price))
+
         if symbol in self.position_dict:
             position = self.position_dict[symbol]
-            position.buyAmount(amount)
+            position.buyAmount(amount, price)
         else:
             self.position_dict[symbol] = PortfolioPosition(self, symbol)
-            self.position_dict[symbol].buyAmount(amount)
+            self.position_dict[symbol].buyAmount(amount, price)
+        return success
 
     def sell(self, symbol, amount):
+        price = self.calculatePrice(symbol, amount)
+        success = self.depot.adjustCash(price)
+
         if symbol in self.position_dict:
             position = self.position_dict[symbol]
-            position.sellAmount(amount)
+            position.sellAmount(amount, price)
         else:
             self.position_dict[symbol] = PortfolioPosition(self, symbol)
-            self.position_dict[symbol].sellAmount(amount)
+            self.position_dict[symbol].sellAmount(amount, price)
+        return success
 
     def getPosition(self, symbol):
         return self.position_dict[symbol]
@@ -152,12 +182,12 @@ class PortfolioPosition:
     def getCurrentAmount(self):
         return self.position_history.getCurrentAmount()
 
-    def buyAmount(self, amount):
-        action = PositionHistoryAction(self.portfolio.getCurrentDate(), "buy", amount)
+    def buyAmount(self, amount, price):
+        action = PositionHistoryAction(self.portfolio.getCurrentDate(), "buy", amount, price)
         self.position_history.addHistoryAction(action)
 
-    def sellAmount(self, amount):
-        action = PositionHistoryAction(self.portfolio.getCurrentDate(), "sell", amount)
+    def sellAmount(self, amount, price):
+        action = PositionHistoryAction(self.portfolio.getCurrentDate(), "sell", amount, price)
         self.position_history.addHistoryAction(action)
 
 class PositionHistory:
@@ -191,14 +221,15 @@ class PositionHistory:
 
 class PositionHistoryAction:
 
-    def __init__(self, date, action_string, amount):
+    def __init__(self, date, action_string, amount, price):
         # action can be "sell" or "buy"
         self.date = date
         self.action_string = action_string
         self.amount = int(amount)
+        self.price = float(price)
 
     def getAsString(self):
-        return("" + self.date.getAsString() + "," + self.action_string + "," + str(self.amount))
+        return("" + self.date.getAsString() + "," + self.action_string + "," + str(self.amount) + "," + str(self.price))
 
     def getDate(self):
         return self.date
@@ -208,6 +239,12 @@ class PositionHistoryAction:
 
     def getAmount(self):
         return self.amount
+
+    def getPrice(self):
+        return self.price
+
+    def getVolume(self):
+        return self.price * self.amount
 
     def getSignedAmount(self):
         if self.action_string == "sell":

@@ -14,6 +14,9 @@ class YAFIApiWrapper:
         self.loadSP500HistoricalData()
         self.sp500symbols = []
 
+    def getAdjustedPriceForDate(self, symbol, date):
+        return self.getAdjustedPriceDataForDate(symbol, date).getData("adj_close")
+
     def getAdjustedPriceDataForDate(self, symbol, date):
         file_name = Util.getHistoricalDataFilename(symbol)
         if not os.path.isfile(file_name):
@@ -40,7 +43,7 @@ class YAFIApiWrapper:
             if Util.compareDateStrings(date_string, date.getAsString()):
                 hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(csv_dict[index])
                 return hist_price_obj
-        return self.getRecursiveAdjPrice(rec_counter - 1, symbol, date.getNextDayDate())
+        return self.getRecursiveAdjPrice(rec_counter - 1, symbol, date.getBeforeDate(1))
 
     def getHistoricalAdjustedPriceData(self, symbol, start_date, end_date, time_interval):
         d1 = str(start_date.getDay())

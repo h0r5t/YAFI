@@ -122,12 +122,44 @@ def loadPositionHistory(depot_name, portfolio_name, symbol):
 def getFileList(path):
     return os.listdir(path)
 
+def floatToStr(number):
+    return "{:.2f}".format(number) 
+
 class UtilDate():
 
     def __init__(self, year, month, day):
         self.year = int(year)
         self.month = int(month)
         self.day = int(day)
+
+    def __eq__(self, other):
+        if self.year == other.getYear():
+            if self.month == other.getMonth():
+                if self.day == other.getDay():
+                    return True
+        return False
+
+    def __lt__(self, other):
+        if self.year < other.getYear():
+            return True
+        elif self.year == other.getYear():
+            if self.month < other.getMonth():
+                return True
+            elif self.month == other.getMonth():
+                if self.day < other.getDay():
+                    return True
+        return False
+
+    def __gt__(self, other):
+        if self.year > other.getYear():
+            return True
+        elif self.year == other.getYear():
+            if self.month > other.getMonth():
+                return True
+            elif self.month == other.getMonth():
+                if self.day > other.getDay():
+                    return True
+        return False
 
     def getYear(self):
         return self.year
@@ -140,6 +172,17 @@ class UtilDate():
 
     def getAsString(self):
         return("" + str(self.year) + "-" + str(self.month) + "-" + str(self.day))
+
+    def getAfterDate(self, days):
+        if self.day + days > 30:
+            month = self.month + 1
+            day = days - (30 - self.day)
+            year = self.year
+            if month == 13:
+                month = 1
+                year = self.year + 1
+            return UtilDate(year, month, day)
+        return UtilDate(self.year, self.month, self.day+days)
 
     def getNextDayDate(self):
         if self.day + 1 > 30:
