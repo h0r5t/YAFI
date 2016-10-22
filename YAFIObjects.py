@@ -26,7 +26,6 @@ class YAFIObject:
         string = string[:-1]
         return string
 
-
 class YAFIObjectCurrentStockPrice(YAFIObject):
 
     def __init__(self, unnamed_list):
@@ -45,5 +44,19 @@ class YAFIObjectHistoricalComponents(YAFIObject):
 
     def __init__(self, unnamed_list):
         param_list = ["symbol", "company", "2016", "2015", "2014", "2013", "2012", "2011", "2010", "2009", "2008"]
+        YAFIObject.setParameterNames(self, param_list)
+        YAFIObject.parse(self, unnamed_list)
+
+class YAFIObjectPositionHistoryAction(YAFIObject):
+
+    def __init__(self, unnamed_list):
+        param_list = ["date", "action_string", "amount"]
+        YAFIObject.setParameterNames(self, param_list)
+        YAFIObject.parse(self, unnamed_list)
+
+class YAFIObjectDepotInfo(YAFIObject):
+
+    def __init__(self, unnamed_list):
+        param_list = ["cash"]
         YAFIObject.setParameterNames(self, param_list)
         YAFIObject.parse(self, unnamed_list)

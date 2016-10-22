@@ -19,7 +19,7 @@ class YAFIApiWrapper:
         if not os.path.isfile(file_name):
             return -1
         fhandle = open(file_name, "r")
-        csv_dict = self.getDictFromCsvString(fhandle.read())
+        csv_dict = Util.getDictFromCsvString(fhandle.read())
         for index in csv_dict:
             date_string = csv_dict[index][0]
             if Util.compareDateStrings(date_string, date.getAsString()):
@@ -34,7 +34,7 @@ class YAFIApiWrapper:
         if not os.path.isfile(file_name):
             return -1
         fhandle = open(file_name, "r")
-        csv_dict = self.getDictFromCsvString(fhandle.read())
+        csv_dict = Util.getDictFromCsvString(fhandle.read())
         for index in csv_dict:
             date_string = csv_dict[index][0]
             if Util.compareDateStrings(date_string, date.getAsString()):
@@ -83,7 +83,7 @@ class YAFIApiWrapper:
         try:
             response = urlopen(url)
             text = response.read().decode('utf8')
-            dict1 = self.getDictFromCsvString(text)
+            dict1 = Util.getDictFromCsvString(text)
         except HTTPError:
             pass
 
@@ -127,36 +127,13 @@ class YAFIApiWrapper:
                 return self.SP500HistoricalComponentsDict["2016"]
         return self.getSP500Symbols()
 
-    def getDictFromCsvString(self, text):
-        text = Util.removeCommasInQuotes(text)
-        split = text.split(',')
-
-        dict1 = {}
-        counter = 0
-        dict1[0] = []
-        for element in split:
-            element = element.replace('"','')
-            if "\n" in element:
-                newline_split = element.split("\n")
-                dict1[counter].append(newline_split[0])
-                if newline_split[1] == "":
-                    break
-                else:
-                    dict1[counter+1] = []
-                    dict1[counter+1].append(newline_split[1])
-                    counter += 1
-            else:
-                dict1[counter].append(element)
-
-        return dict1
-
     def loadSP500HistoricalData(self):
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
         path = os.path.join(dir_path, "data", "sp500components_historical.csv")
         response = open(path)
         text = response.read()
-        dict1 = self.getDictFromCsvString(text)
+        dict1 = Util.getDictFromCsvString(text)
 
         list2016=[]
         list2015=[]
