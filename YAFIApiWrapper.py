@@ -13,37 +13,85 @@ class YAFIApiWrapper:
         self.SP500HistoricalComponentsDict = {}
         self.loadSP500HistoricalData()
         self.sp500symbols = []
+        self.price_history_cache = {}
+
+    def cachePriceData(self, symbol):
+        file_name = Util.getHistoricalDataFilename(symbol)
+        if not os.path.isfile(file_name):
+            return False
+        fhandle = open(file_name, "r")
+        csv_dict = Util.getDictFromCsvString(fhandle.read())
+        self.price_history_cache[symbol] = csv_dict
+        return True
+
+    def getAdjustedPriceDataRangeStack(self, symbol, start_date, end_date):
+        if symbol not in self.price_history_cache:
+            successful = self.cachePriceData(symbol)
+            if not successful:
+                return None
+        csv_dict = self.price_history_cache[symbol]
+        stack = YAFIObjects.HistoricalAdjustedPriceRangeStack()
+        in_range = False
+        for index in csv_dict:
+            date_string = csv_dict[index][0]
+            cur_date = Util.parseDateString(date_string)
+            if not in_range:
+                if cur_date < end_date or cur_date == end_date:
+                    in_range = True
+                    hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(csv_dict[index])
+                    stack.addPrice(float(hist_price_obj.getData("adj_close")))
+            else:
+                if cur_date < start_date:
+                    break
+                else:
+                    hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(csv_dict[index])
+                    stack.addPrice(float(hist_price_obj.getData("adj_close")))
+        return stack
+
+    def getAdjustedPriceDataRangeStackForAmountOfDays(self, symbol, end_date, days):
+        if symbol not in self.price_history_cache:
+            successful = self.cachePriceData(symbol)
+            if not successful:
+                return None
+        csv_dict = self.price_history_cache[symbol]
+        stack = YAFIObjects.HistoricalAdjustedPriceRangeStack()
+        in_range = False
+        for index in csv_dict:
+            date_string = csv_dict[index][0]
+            cur_date = Util.parseDateString(date_string)
+            if not in_range:
+                if cur_date < end_date or cur_date == end_date:
+                    in_range = True
+                    hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(csv_dict[index])
+                    stack.addPrice(float(hist_price_obj.getData("adj_close")))
+            else:
+                if days == 1:
+                    break
+                else:
+                    hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(csv_dict[index])
+                    stack.addPrice(float(hist_price_obj.getData("adj_close")))
+                    days -= 1
+        return stack
 
     def getAdjustedPriceForDate(self, symbol, date):
-        return self.getAdjustedPriceDataForDate(symbol, date).getData("adj_close")
+        data = self.getAdjustedPriceDataForDate(symbol, date)
+        if data is None:
+            return None
+        return float(data.getData("adj_close"))
 
     def getAdjustedPriceDataForDate(self, symbol, date):
-        file_name = Util.getHistoricalDataFilename(symbol)
-        if not os.path.isfile(file_name):
-            return -1
-        fhandle = open(file_name, "r")
-        csv_dict = Util.getDictFromCsvString(fhandle.read())
+        if symbol not in self.price_history_cache:
+            successful = self.cachePriceData(symbol)
+            if not successful:
+                return None
+        csv_dict = self.price_history_cache[symbol]
         for index in csv_dict:
             date_string = csv_dict[index][0]
             if Util.compareDateStrings(date_string, date.getAsString()):
                 hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(csv_dict[index])
                 return hist_price_obj
-        return self.getRecursiveAdjPrice(5, symbol, date.getNextDayDate())
-
-    def getRecursiveAdjPrice(self, rec_counter, symbol, date):
-        if rec_counter < 0:
-            return None
-        file_name = Util.getHistoricalDataFilename(symbol)
-        if not os.path.isfile(file_name):
-            return -1
-        fhandle = open(file_name, "r")
-        csv_dict = Util.getDictFromCsvString(fhandle.read())
-        for index in csv_dict:
-            date_string = csv_dict[index][0]
-            if Util.compareDateStrings(date_string, date.getAsString()):
-                hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(csv_dict[index])
-                return hist_price_obj
-        return self.getRecursiveAdjPrice(rec_counter - 1, symbol, date.getBeforeDate(1))
+        # return self.getRecursiveAdjPrice(5, symbol, date.getNextDayDate())
+        return None
 
     def getHistoricalAdjustedPriceData(self, symbol, start_date, end_date, time_interval):
         d1 = str(start_date.getDay())

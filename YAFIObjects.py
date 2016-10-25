@@ -60,3 +60,24 @@ class YAFIObjectDepotInfo(YAFIObject):
         param_list = ["cash"]
         YAFIObject.setParameterNames(self, param_list)
         YAFIObject.parse(self, unnamed_list)
+
+class HistoricalAdjustedPriceRangeStack():
+
+    def __init__(self):
+        self.stack = []
+
+    def getSize(self):
+        return len(self.stack)
+
+    def getList(self):
+        return self.stack
+
+    def addPrice(self, price_num):
+        # instance of YAFIObjectHistoricalPrice
+        self.stack.insert(0, price_num)
+
+    def popPrice(self):
+        return self.stack.pop(0)
+
+    def hasMore(self):
+        return not (len(self.stack) == 0)

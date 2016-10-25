@@ -171,7 +171,13 @@ class UtilDate():
         return self.day
 
     def getAsString(self):
-        return("" + str(self.year) + "-" + str(self.month) + "-" + str(self.day))
+        day_string = str(self.day)
+        month_string = str(self.month)
+        if self.day - 10 < 0:
+            day_string = "0" + str(self.day)
+        if self.month - 10 < 0:
+            month_string = "0" + str(self.month)
+        return("" + str(self.year) + "-" + month_string + "-" + day_string)
 
     def getAfterDate(self, days):
         if self.day + days > 30:
