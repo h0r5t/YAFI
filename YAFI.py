@@ -13,7 +13,13 @@ class YAFI:
         # sim_env = SimEnv.SimEnv()
         # algo = Algorithm.TestAlgorithm(sim_env, api_wrapper)
         # sim_env.simulateAlgorithm(algo, Util.UtilDate(2009, 1, 1), Util.UtilDate(2009, 3, 30), 1)
-        
+
+        price_stack = api_wrapper.getAdjustedPriceDataRangeStackForAmountOfDays("MSFT", Util.UtilDate(2012, 11, 1), 90)
+        atr = Calculations.calculateATR(api_wrapper, price_stack)
+        print(atr)
+
+        return
+
         start_time = time.time()
         print("starting...")
         best_dict = {}
