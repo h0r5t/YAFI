@@ -5,32 +5,42 @@ import math
 from bokeh.plotting import figure, output_file, show
 from Util import UtilDate
 
-def calculatePositionSize(risk_factor, depot_size, atr):
-    size = 0
-    #calculate size of posiiton
-    return size
+def calculatePositionSize(depot_size, atr, risk_factor=0.001):
+    size = depot_size * risk_factor / atr
+    return int(size)
 
-def calculateATR(api_wrapper, price_stack, interval=14):
+def calculateMovingAverage(price_stack, days):
+    if days > price_stack.getSize():
+        print("error, average days > price_stack size")
+        return 0
+    price_sum = 0
+    for price_obj in price_stack.getList():
+        price_sum += float(price_obj.getData("adj_close"))
+    return price_sum / days
+
+def calculateATR(api_wrapper, price_stack, interval=20):
     if price_stack.getSize() <= 1:
         return 0
     sum1 = 0
-    for i in range(0, 14):
+    for i in range(0, interval):
         sum1 += calculateTrueRange(price_stack.popLastPriceObject(), price_stack.getLastObject())
-    atr = sum1 / 14
-    print("ATR: " + str(atr))
+    atr = sum1 / interval
     return atr
 
 def calculateTrueRange(price_obj, prev_obj):
     high = float(price_obj.getData("high"))
     low = float(price_obj.getData("low"))
+    close = float(price_obj.getData("close"))
     close_prev = float(prev_obj.getData("close"))
+    adj_close = float(price_obj.getData("adj_close"))
 
-    n1 = high - low
-    n2 = abs(high - close_prev)
-    n3 = abs(low - close_prev)
+    factor1 = (high - low) / close
+    n1 = factor1 * adj_close
+    factor2 = abs(high - close_prev) / close
+    n2 = factor2 * adj_close
+    factor3 = abs(low - close_prev) / close
+    n3 = factor3 * adj_close
     true_range = max([n1, n2, n3])
-
-    print(str(high) + " " + str(low) + " " + str(close_prev) + " " + str(true_range))
 
     return true_range
 
