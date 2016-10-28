@@ -36,7 +36,7 @@ class YAFIObjectCurrentStockPrice(YAFIObject):
 class YAFIObjectHistoricalPrice(YAFIObject):
 
     def __init__(self, unnamed_list):
-        param_list = ["date", "open", "low", "high", "close", "volume", "adj_close"]
+        param_list = ["date", "open", "high", "low", "close", "volume", "adj_close"]
         YAFIObject.setParameterNames(self, param_list)
         YAFIObject.parse(self, unnamed_list)
 
@@ -81,10 +81,10 @@ class HistoricalAdjustedPriceRangeStack():
             return None
         return self.stack.pop()
 
-    def getSecondLastObject(self):
-        if len(self.stack) < 2:
+    def getLastObject(self):
+        if len(self.stack) == 0:
             return None
-        return self.stack[len(self.stack) - 2]
+        return self.stack[len(self.stack) - 1]
 
     def hasMore(self):
         return not (len(self.stack) == 0)

@@ -5,15 +5,19 @@ import math
 from bokeh.plotting import figure, output_file, show
 from Util import UtilDate
 
+def calculatePositionSize(risk_factor, depot_size, atr):
+    size = 0
+    #calculate size of posiiton
+    return size
+
 def calculateATR(api_wrapper, price_stack, interval=14):
-    if interval == 0:
-        return 0.5
-    else:
-        if price_stack.getSize() <= 1:
-            return 0
-        true_range = calculateTrueRange(price_stack.popLastPriceObject(), price_stack.getSecondLastObject())
-        atr = ((calculateATR(api_wrapper, price_stack, interval-1) * 13) + true_range) / 14
-        print(atr)
+    if price_stack.getSize() <= 1:
+        return 0
+    sum1 = 0
+    for i in range(0, 14):
+        sum1 += calculateTrueRange(price_stack.popLastPriceObject(), price_stack.getLastObject())
+    atr = sum1 / 14
+    print("ATR: " + str(atr))
     return atr
 
 def calculateTrueRange(price_obj, prev_obj):
@@ -25,6 +29,8 @@ def calculateTrueRange(price_obj, prev_obj):
     n2 = abs(high - close_prev)
     n3 = abs(low - close_prev)
     true_range = max([n1, n2, n3])
+
+    print(str(high) + " " + str(low) + " " + str(close_prev) + " " + str(true_range))
 
     return true_range
 
