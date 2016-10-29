@@ -14,17 +14,9 @@ class YAFI:
         # algo = Algorithm.TestAlgorithm(sim_env, api_wrapper)
         # sim_env.simulateAlgorithm(algo, Util.UtilDate(2009, 1, 1), Util.UtilDate(2009, 3, 30), 1)
 
-        obj = api_wrapper.getHistoricalAdjustedPriceData("^GSPC", Util.UtilDate(2016, 10, 22), Util.UtilDate(2016, 11, 25), "daily")
-        for key in obj:
-            print(key.getData("date") + " " + key.getData("adj_close"))
-
-        return
-
-        price_stack = api_wrapper.getAdjustedPriceDataRangeStackForAmountOfDays("AAPL", Util.UtilDate(2016, 10, 22), 105)
-        avg_100 = Calculations.calculateMovingAverage(price_stack, 100)
+        price_stack = api_wrapper.getAdjustedPriceDataRangeStackForAmountOfDays("AAPL", Util.UtilDate(2016, 6, 28), 21)
         atr = Calculations.calculateATR(api_wrapper, price_stack)
         print(atr)
-        print(avg_100)
         print(Calculations.calculatePositionSize(100000, atr))
 
         return

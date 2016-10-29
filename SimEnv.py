@@ -9,14 +9,14 @@ class SimEnv:
     def __init__(self):
         self.current_date = None
 
-    def simulateAlgorithm(self, algo, start_date, end_date, interval):
+    def simulateAlgorithm(self, algo, start_date, end_date):
 
         algo.prepare()
 
         self.current_date = start_date
         while True:
-            algo.doLogic(self.current_date)
-            self.current_date = self.current_date.getAfterDate(interval)
+            algo.preLogic(self.current_date)
+            self.current_date = self.current_date.getNextDayDate()
             if self.current_date > end_date:
                 break
 
@@ -59,7 +59,10 @@ class Depot:
         else:
             self.loadPortfolios()
             self.info_obj = self.loadInfo()
-            self.cash = float(self.info_obj.getData("cash"))
+            if self.info_obj is not None:
+                self.cash = float(self.info_obj.getData("cash"))
+            else:
+                self.cash = 0
 
     def save(self):
         info_filename = Util.getDepotInfoFile(self.name)
@@ -124,11 +127,7 @@ class Portfolio:
         price = self.calculatePrice(symbol, amount)
         success = self.depot.adjustCash(-price)
         if success == False:
-            print("!!! cant make purchase: cash=" + Util.floatToStr(self.depot.getCash()) + " ,price=" + Util.floatToStr(price))
             return False
-        else:
-            print("made purchase: cash=" + Util.floatToStr(self.depot.getCash()) + " ,price=" + Util.floatToStr(price))
-
         if symbol in self.position_dict:
             position = self.position_dict[symbol]
             position.buyAmount(amount, price)
@@ -142,7 +141,6 @@ class Portfolio:
         success = self.depot.adjustCash(price)
         if success == False:
             return False
-
         if symbol in self.position_dict:
             position = self.position_dict[symbol]
             position.sellAmount(amount, price)

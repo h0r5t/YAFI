@@ -131,6 +131,22 @@ class UtilDate():
         self.year = int(year)
         self.month = int(month)
         self.day = int(day)
+        self.month_days_dict = {}
+        self.month_days_dict[1] = 31
+        self.month_days_dict[2] = 28 + int(self.year % 4 == 0)
+        self.month_days_dict[3] = 31
+        self.month_days_dict[4] = 30
+        self.month_days_dict[5] = 31
+        self.month_days_dict[6] = 30
+        self.month_days_dict[7] = 31
+        self.month_days_dict[8] = 31
+        self.month_days_dict[9] = 30
+        self.month_days_dict[10] = 31
+        self.month_days_dict[11] = 30
+        self.month_days_dict[12] = 31
+
+        if self.day > self.month_days_dict[self.month]:
+            self.day = self.month_days_dict[self.month]
 
     def __eq__(self, other):
         if self.year == other.getYear():
@@ -180,34 +196,31 @@ class UtilDate():
         return("" + str(self.year) + "-" + month_string + "-" + day_string)
 
     def getAfterDate(self, days):
-        if self.day + days > 30:
+        limit = self.month_days_dict[self.month]
+        if self.day + days > limit:
             month = self.month + 1
-            day = days - (30 - self.day)
-            year = self.year
             if month == 13:
                 month = 1
                 year = self.year + 1
+            else:
+                year = self.year
+            day = days - (limit - self.day)
             return UtilDate(year, month, day)
         return UtilDate(self.year, self.month, self.day+days)
 
     def getNextDayDate(self):
-        if self.day + 1 > 30:
-            day = 1
-            month = self.month + 1
-            year = self.year
-            if month > 12:
-                year += 1
-                month = 1
-            return UtilDate(year, month, day)
-        return UtilDate(self.year, self.month, self.day+1)
+        return self.getAfterDate(1)
 
     def getBeforeDate(self, days):
         if self.day - days < 1:
             month = self.month - 1
-            day = 30 - (days - self.day)
-            year = self.year
             if month == 0:
                 month = 12
                 year = self.year - 1
+            else:
+                year = self.year
+            limit = self.month_days_dict[month]
+            day = limit - (days - self.day)
+
             return UtilDate(year, month, day)
         return UtilDate(self.year, self.month, self.day-days)

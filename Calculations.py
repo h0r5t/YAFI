@@ -19,11 +19,13 @@ def calculateMovingAverage(price_stack, days):
     return price_sum / days
 
 def calculateATR(api_wrapper, price_stack, interval=20):
+    price_list = price_stack.getList()
+    size = len(price_list)
     if price_stack.getSize() <= 1:
         return 0
     sum1 = 0
     for i in range(0, interval):
-        sum1 += calculateTrueRange(price_stack.popLastPriceObject(), price_stack.getLastObject())
+        sum1 += calculateTrueRange(price_list[size - 1 - i], price_list[size - 2 - i])
     atr = sum1 / interval
     return atr
 

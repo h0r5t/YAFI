@@ -63,22 +63,20 @@ class YAFIApiWrapper:
                 if cur_date < end_date or cur_date == end_date:
                     in_range = True
                     hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(csv_dict[index])
-                    print(hist_price_obj.getData("date") + " " + hist_price_obj.getData("close") + " " + hist_price_obj.getData("adj_close"))
                     stack.addPriceObject(hist_price_obj)
             else:
                 if days == 1:
                     break
                 else:
                     hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(csv_dict[index])
-                    print(hist_price_obj.getData("date") + " " + hist_price_obj.getData("close") + " " + hist_price_obj.getData("adj_close"))
                     stack.addPriceObject(hist_price_obj)
                     days -= 1
         return stack
 
-    def getAdjustedPriceForDate(self, symbol, date):
+    def getAdjustedPriceForDate(self, symbol, date, recursion_counter=7):
         data = self.getAdjustedPriceDataForDate(symbol, date)
         if data is None:
-            return None
+            return self.getAdjustedPriceForDate(symbol, date.getBeforeDate(1), recursion_counter-1)
         return float(data.getData("adj_close"))
 
     def getAdjustedPriceDataForDate(self, symbol, date):
