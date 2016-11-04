@@ -4,38 +4,22 @@ import SimEnv
 import Algorithm
 import Calculations
 import time
+import View
 
 class YAFI:
 
     def __init__(self):
         api_wrapper = YAFIApiWrapper.YAFIApiWrapper()
+        start_date = Util.UtilDate(2015, 10, 1)
+        end_date = Util.UtilDate(2016, 10, 20)
 
-        # sim_env = SimEnv.SimEnv()
-        # algo = Algorithm.TestAlgorithm(sim_env, api_wrapper)
-        # sim_env.simulateAlgorithm(algo, Util.UtilDate(2009, 1, 1), Util.UtilDate(2009, 3, 30), 1)
+        graph = View.Graph("Adj. Close", "day", "value")
+        view1 = View.PriceView(api_wrapper, "INTC", start_date, end_date)
+        view2 = View.PriceView(api_wrapper, "MSFT", start_date, end_date)
+        graph.addView(view1)
+        graph.addView(view2)
 
-        price_stack = api_wrapper.getAdjustedPriceDataRangeStackForAmountOfDays("AAPL", Util.UtilDate(2016, 6, 28), 21)
-        atr = Calculations.calculateATR(api_wrapper, price_stack)
-        print(atr)
-        print(Calculations.calculatePositionSize(100000, atr))
-
-        return
-
-        start_time = time.time()
-        print("starting...")
-        best_dict = {}
-        date = Util.UtilDate(2013, 1, 1)
-        sp500symbols = api_wrapper.getSP500ComponentsForDate(date)
-        for symbol in sp500symbols:
-            adj_slope = Calculations.getAdjustedAnnualizedSlope(api_wrapper, symbol, date)
-            print(symbol + ": " + str(adj_slope))
-            if adj_slope > 100:
-                best_dict[symbol] = adj_slope
-        print("computed in: " + str(time.time() - start_time))
-
-        print("\nTOP MOMENTUM:")
-        for key in best_dict:
-            print(key + ": " + str(best_dict[key]))
+        graph.show()
 
 if __name__ == "__main__":
     yafi = YAFI()
