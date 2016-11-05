@@ -13,6 +13,14 @@ class YAFI:
         start_date = Util.UtilDate(2015, 10, 1)
         end_date = Util.UtilDate(2016, 10, 20)
 
+        price_stack = api_wrapper.getAdjustedPriceDataRangeStack(self.symbol, self.end_date, 90)
+        while True:
+            
+            atr = Calculations.calculateATR(api_wrapper, price_stack)
+            print(atr)
+
+        return
+
         graph = View.Graph("Adj. Close", "day", "value")
         view1 = View.PriceView(api_wrapper, "INTC", start_date, end_date)
         view2 = View.PriceView(api_wrapper, "MSFT", start_date, end_date)

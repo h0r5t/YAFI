@@ -69,10 +69,12 @@ class HistoricalAdjustedPriceRangeStack():
     def getSize(self):
         return len(self.stack)
 
+    def removeLast(self):
+        self.stack.pop(self.getSize() - 1)
+
     def getList(self):
         return self.stack
 
     def addPriceObject(self, price_obj):
         # instance of YAFIObjectHistoricalPrice
         self.stack.insert(0, price_obj)
-        
