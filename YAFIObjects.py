@@ -69,8 +69,8 @@ class HistoricalAdjustedPriceRangeStack():
     def getSize(self):
         return len(self.stack)
 
-    def removeLast(self):
-        self.stack.pop(self.getSize() - 1)
+    def getLastObject(self):
+        return self.stack[self.getSize() - 1]
 
     def getList(self):
         return self.stack

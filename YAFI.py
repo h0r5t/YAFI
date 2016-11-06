@@ -5,27 +5,37 @@ import Algorithm
 import Calculations
 import time
 import View
+import os
+from bokeh.models import HoverTool
+from bokeh.plotting import ColumnDataSource
+import numpy as np
 
 class YAFI:
 
     def __init__(self):
         api_wrapper = YAFIApiWrapper.YAFIApiWrapper()
-        start_date = Util.UtilDate(2015, 10, 1)
-        end_date = Util.UtilDate(2016, 10, 20)
 
-        price_stack = api_wrapper.getAdjustedPriceDataRangeStack(self.symbol, self.end_date, 90)
-        while True:
-            
-            atr = Calculations.calculateATR(api_wrapper, price_stack)
-            print(atr)
+        hover = HoverTool(
+                tooltips=[
+                    ("index", "$index"),
+                    ("(x,y)", "($x, $y)"),
+                    ("text", "@text"),
+                ]
+            )
 
-        return
+        source = ColumnDataSource(
+                data=dict(
+                    x=[np.datetime64("2015-03-01")],
+                    y=[120],
+                    text=["test"],
+                )
+            )
+        tools = [hover]
+        graph = View.Graph("price", "a", "b", tools)
+        graph.addCircle("x", "y", 20, source)
+        pv = View.PriceView(api_wrapper, "AAPL", Util.UtilDate(2015,1,1), Util.UtilDate(2015,5,1))
+        graph.addView(pv)
 
-        graph = View.Graph("Adj. Close", "day", "value")
-        view1 = View.PriceView(api_wrapper, "INTC", start_date, end_date)
-        view2 = View.PriceView(api_wrapper, "MSFT", start_date, end_date)
-        graph.addView(view1)
-        graph.addView(view2)
 
         graph.show()
 

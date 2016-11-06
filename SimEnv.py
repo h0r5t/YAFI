@@ -3,11 +3,15 @@ import Algorithm
 import Util
 import YAFIObjects
 import shutil
+import math
 
 class SimEnv:
 
     def __init__(self):
         self.current_date = None
+
+    def setDate(self, date):
+        self.current_date = date
 
     def simulateAlgorithm(self, algo, start_date, end_date):
 
@@ -61,8 +65,6 @@ class Depot:
             self.info_obj = self.loadInfo()
             if self.info_obj is not None:
                 self.cash = float(self.info_obj.getData("cash"))
-            else:
-                self.cash = 0
 
     def save(self):
         info_filename = Util.getDepotInfoFile(self.name)
@@ -89,6 +91,12 @@ class Depot:
 
     def getCash(self):
         return self.cash
+
+    def getCurrentValue(self):
+        sum1 = 0
+        for p in self.portfolios:
+            sum1 += p.getCurrentValue()
+        return sum1 + self.cash
 
     def removePortfolio(self, portfolio):
         filename = Util.getPortfolioFolder(self.name, portfolio.getName())
@@ -119,35 +127,57 @@ class Portfolio:
             self.position_dict[key].save()
 
     def calculatePrice(self, symbol, amount):
-        price = float(self.depot.getApiWrapper().getAdjustedPriceForDate(symbol, self.getCurrentDate()))
-        price = price * amount
-        return price
+        price_for_one = float(self.depot.getApiWrapper().getAdjustedPriceForDate(symbol, self.getCurrentDate()))
+        price = price_for_one * amount
+        return (price_for_one, price)
 
     def buy(self, symbol, amount):
-        price = self.calculatePrice(symbol, amount)
+        price_for_one, price = self.calculatePrice(symbol, amount)
         success = self.depot.adjustCash(-price)
         if success == False:
+            possibleAmount = math.floor(self.depot.getCash() / price_for_one)
+            self.buy(symbol, possibleAmount)
             return False
         if symbol in self.position_dict:
             position = self.position_dict[symbol]
-            position.buyAmount(amount, price)
+            position.buyAmount(amount, price_for_one)
         else:
             self.position_dict[symbol] = PortfolioPosition(self, symbol)
-            self.position_dict[symbol].buyAmount(amount, price)
+            self.position_dict[symbol].buyAmount(amount, price_for_one)
         return success
 
     def sell(self, symbol, amount):
-        price = self.calculatePrice(symbol, amount)
+        price_for_one, price = self.calculatePrice(symbol, amount)
         success = self.depot.adjustCash(price)
         if success == False:
             return False
         if symbol in self.position_dict:
             position = self.position_dict[symbol]
-            position.sellAmount(amount, price)
+            position.sellAmount(amount, price_for_one)
         else:
             self.position_dict[symbol] = PortfolioPosition(self, symbol)
-            self.position_dict[symbol].sellAmount(amount, price)
+            self.position_dict[symbol].sellAmount(amount, price_for_one)
         return success
+
+
+    def sellAll(self, symbol):
+        self.sell(symbol, self.getPosition(symbol).getCurrentAmount())
+
+    def getPositions(self):
+        # returns list of PortfolioPosition
+        list1 = []
+        for pos in self.position_dict.values():
+            if pos.getCurrentAmount() > 0:
+                list1.append(pos)
+        return list1
+
+    def getSymbols(self):
+        # returns list of symbols only
+        list1 = []
+        for pos in self.position_dict.values():
+            if pos.getCurrentAmount() > 0:
+                list1.append(pos.getSymbol())
+        return list1
 
     def getPosition(self, symbol):
         return self.position_dict[symbol]
@@ -161,6 +191,12 @@ class Portfolio:
     def getCurrentDate(self):
         return self.sim_env.getCurrentDate()
 
+    def getCurrentValue(self):
+        sum1 = 0
+        for key, pos in self.position_dict.items():
+            a, val = self.calculatePrice(key, pos.getCurrentAmount())
+            sum1 += val
+        return sum1
 
 class PortfolioPosition:
 

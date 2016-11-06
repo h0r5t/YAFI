@@ -154,6 +154,11 @@ class YAFIApiWrapper:
         return self.SP500HistoricalComponentsDict
 
     def getSP500ComponentsForDate(self, date):
+        # CARE: FAKE FOR TESTING
+
+        # return ["AAPL", "MSFT", "BAC", "NFLX", "ORCL"]
+
+        # FAKE END
         if date.getYear() < 2008:
             print("only data after 2008...")
             return None

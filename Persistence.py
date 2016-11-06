@@ -2,6 +2,25 @@ import os
 import YAFIApiWrapper
 import Util
 
+def downloadIndexData(api_wrapper, start_date):
+    #S&P500
+    symbol = "^GSPC"
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    path = os.path.join(dir_path, "historical", symbol + ".csv")
+    file_handle = open(path, "w")
+
+    hist_prices_obj_list = api_wrapper.getHistoricalAdjustedPriceData(symbol, start_date, Util.getCurrentDate(), "daily")
+    if len(hist_prices_obj_list) == 0:
+        # error occurred
+        file_handle.close()
+        return False
+
+    for obj in hist_prices_obj_list:
+        file_handle.write(obj.getAsString() + "\n")
+
+    file_handle.close()
+    return True
+
 def downloadAllHistoricalDataBasedOnSP500(api_wrapper, start_date):
     counter = 0
     error_counter = 0
@@ -35,8 +54,7 @@ def downloadAllHistoricalDataBasedOnSP500(api_wrapper, start_date):
 
 def dataIsPresent(path):
     if os.path.isfile(path):
-            return True
-
+        return True
     return False
 
 def getRecencyDate(path):
@@ -101,3 +119,4 @@ if __name__ == "__main__":
     api_wrapper = YAFIApiWrapper.YAFIApiWrapper()
     deleteEmptyFiles(api_wrapper, Util.UtilDate(2000, 1, 1))
     downloadAllHistoricalDataBasedOnSP500(api_wrapper, Util.UtilDate(2000, 1, 1))
+    downloadIndexData(api_wrapper, Util.UtilDate(2000, 1, 1))
