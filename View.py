@@ -100,7 +100,7 @@ class Graph():
         self.title = title
         self.x_label = x_label
         self.y_label = y_label
-        plotting.output_file("view.html")
+        plotting.output_file("views/view.html")
         if tools is None:
             self.plot = plotting.figure(title=self.title, x_axis_label=self.x_label, y_axis_label=self.y_label, plot_width=1200, x_axis_type="datetime")
         else:
