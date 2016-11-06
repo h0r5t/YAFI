@@ -32,7 +32,7 @@ class YAFI:
             )
         tools = [hover]
         graph = View.Graph("price", "a", "b", tools)
-        graph.addCircle("x", "y", 20, source)
+        graph.addCircle("x", "y", size=10, source=source)
         pv = View.PriceView(api_wrapper, "AAPL", Util.UtilDate(2015,1,1), Util.UtilDate(2015,5,1))
         graph.addView(pv)
 

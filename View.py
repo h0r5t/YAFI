@@ -105,11 +105,11 @@ class Graph():
             self.plot = plotting.figure(title=self.title, x_axis_label=self.x_label, y_axis_label=self.y_label, plot_width=1200, x_axis_type="datetime")
         else:
             self.plot = plotting.figure(title=self.title, x_axis_label=self.x_label, y_axis_label=self.y_label, plot_width=1200, x_axis_type="datetime", tools=tools)
-        self.color_list = ["red", "blue", "green", "yellow", "orange"]
+        self.color_list = ["blue", "red", "green", "yellow", "orange"]
         self.view_counter = 0
 
     def addCircle(self, x_name, y_name, size, source):
-        self.plot.circle(x_name, y_name, size, source)
+        self.plot.circle(x=x_name, y=y_name, size=size, source=source)
 
     def addLabelData(self, label_data):
         source = ColumnDataSource(label_data.getDict())
