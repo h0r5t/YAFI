@@ -3,6 +3,21 @@ from bokeh.models import ColumnDataSource, Range1d, LabelSet, Label
 import Calculations
 import time
 import numpy as np
+from bokeh.models import HoverTool
+from bokeh.plotting import ColumnDataSource
+
+def generateBuySellGraph(api_wrapper, depot_name, portfolio_name, symbol, start_date, end_date):
+    # returns the graph
+
+    graph = Graph("BUY/SELL VIEW", "Date", "Adj. Close", True)
+    pv = PriceView(api_wrapper, symbol, start_date, end_date)
+    graph.addView(pv)
+
+    posh_actions = api_wrapper.getPositionHistoryActionListForDateRange(depot_name, portfolio_name, symbol, start_date, end_date)
+    for action in posh_actions:
+        graph.addPositionHistoryActionHoverPoint(action)
+
+    return graph
 
 class View():
 
@@ -96,26 +111,97 @@ class BuyLabelData():
 
 class Graph():
 
-    def __init__(self, title, x_label, y_label, tools=None):
+    def __init__(self, title, x_label, y_label, hover_tools_enabled=False):
         self.title = title
         self.x_label = x_label
         self.y_label = y_label
         plotting.output_file("views/view.html")
-        if tools is None:
+        if hover_tools_enabled == False:
             self.plot = plotting.figure(title=self.title, x_axis_label=self.x_label, y_axis_label=self.y_label, plot_width=1200, x_axis_type="datetime")
         else:
-            self.plot = plotting.figure(title=self.title, x_axis_label=self.x_label, y_axis_label=self.y_label, plot_width=1200, x_axis_type="datetime", tools=tools)
+            hover = HoverTool(
+                    tooltips=[
+                        ("date", "@date_string"),
+                        ("price", "@y"),
+                        ("amount", "@amount"),
+                        ("volume", "@volume"),
+                    ],names=["posh_1", "posh_2"]
+                )
+            self.plot = plotting.figure(title=self.title, x_axis_label=self.x_label, y_axis_label=self.y_label, plot_width=1200, x_axis_type="datetime", tools=[hover])
         self.color_list = ["blue", "red", "green", "yellow", "orange"]
         self.view_counter = 0
 
-    def addCircle(self, x_name, y_name, size, source):
-        self.plot.circle(x=x_name, y=y_name, size=size, source=source)
+        # dicts for hover tools
+        self.dates_list_buy = []
+        self.prices_list_buy = []
+        self.dates_string_list_buy = []
+        self.amounts_list_buy = []
+        self.volume_list_buy = []
+        self.sizes_list_buy = []
+
+        self.dates_list_sell = []
+        self.prices_list_sell = []
+        self.dates_string_list_sell = []
+        self.amounts_list_sell = []
+        self.volume_list_sell = []
+        self.sizes_list_sell = []
 
     def addLabelData(self, label_data):
         source = ColumnDataSource(label_data.getDict())
         labels = LabelSet(x='dates', y='prices', text='text', level='glyph',
               x_offset=5, y_offset=5, source=source, render_mode='canvas')
         self.plot.add_layout(labels)
+
+    def addPositionHistoryActionHoverPoint(self, pos_his_action):
+        if pos_his_action.getAction() == "buy":
+            self.dates_list_buy.append(np.datetime64(pos_his_action.getDate().getAsString()))
+            self.prices_list_buy.append(float(pos_his_action.getPrice()))
+            self.dates_string_list_buy.append(pos_his_action.getDate().getAsString())
+            self.amounts_list_buy.append(int(pos_his_action.getAmount()))
+            self.volume_list_buy.append(float(pos_his_action.getVolume())/1000)
+            self.sizes_list_buy.append(self.calculatePoshActionCircleSize(int(pos_his_action.getAmount())))
+
+        elif pos_his_action.getAction() == "sell":
+            self.dates_list_sell.append(np.datetime64(pos_his_action.getDate().getAsString()))
+            self.prices_list_sell.append(float(pos_his_action.getPrice()))
+            self.dates_string_list_sell.append(pos_his_action.getDate().getAsString())
+            self.amounts_list_sell.append(int(pos_his_action.getAmount()))
+            self.volume_list_sell.append(float(pos_his_action.getVolume())/1000)
+            self.sizes_list_sell.append(self.calculatePoshActionCircleSize(int(pos_his_action.getAmount())))
+
+    def calculatePoshActionCircleSize(self, amount):
+        a = amount
+        if a <= 7:
+            return 7
+        if a >= 25:
+            return 25
+        return a
+
+    def activateHoverTools(self):
+        source_buy = ColumnDataSource(
+                data=dict(
+                    x=self.dates_list_buy,
+                    y=self.prices_list_buy,
+                    date_string=self.dates_string_list_buy,
+                    amount=self.amounts_list_buy,
+                    volume=self.volume_list_buy,
+                    sizes=self.sizes_list_buy
+                )
+            )
+
+        source_sell = ColumnDataSource(
+                data=dict(
+                    x=self.dates_list_sell,
+                    y=self.prices_list_sell,
+                    date_string=self.dates_string_list_sell,
+                    amount=self.amounts_list_sell,
+                    volume=self.volume_list_sell,
+                    sizes=self.sizes_list_sell
+                )
+            )
+
+        self.plot.circle(x="x", y="y", source=source_buy, color="#4CA07A", name="posh_1", size="sizes")
+        self.plot.circle(x="x", y="y", source=source_sell, color="#9B093E", name="posh_2", size="sizes")
 
     def addView(self, view):
         xlist = view.getXList()
@@ -126,4 +212,9 @@ class Graph():
         self.plot.line(xlist, ylist, legend=view.getLegend(), line_width=2, line_color=color)
 
     def show(self):
+        self.activateHoverTools()
         plotting.show(self.plot)
+
+    def save(self):
+        self.activateHoverTools()
+        plotting.save(self.plot)

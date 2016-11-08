@@ -34,7 +34,7 @@ class TestAlgorithm(Algorithm):
 
     def __init__(self, sim_env, api_wrapper):
         self.init(sim_env, api_wrapper)
-        self.depot = SimEnv.Depot(sim_env, api_wrapper, "test_depot", 10000)
+        self.depot = SimEnv.Depot(sim_env, api_wrapper, "test_depot", 100000)
         self.portfolio = SimEnv.Portfolio(sim_env, self.depot, "test_portfolio")
         self.depot.addPortfolio(self.portfolio)
         self.setDaysToSkip(6)
@@ -135,7 +135,7 @@ class TestAlgorithm(Algorithm):
             if Calculations.gapExists(price_stack, 100):
                 symbols_with_gap.append(symbol)
                 continue
-            
+
             # get the momentum stuff
             slope = Calculations.getAdjustedAnnualizedSlope(price_stack)
             atr = Calculations.calculateATR(price_stack)
@@ -154,6 +154,6 @@ if __name__ == "__main__":
     sim_env = SimEnv.SimEnv()
     algo = TestAlgorithm(sim_env, api_wrapper)
 
-    start_date = Util.UtilDate(2015, 1, 1)
-    end_date = Util.UtilDate(2015, 2, 1)
+    start_date = Util.UtilDate(2011, 10, 1)
+    end_date = Util.UtilDate(2012, 3, 1)
     sim_env.simulateAlgorithm(algo, start_date, end_date)

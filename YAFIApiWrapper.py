@@ -3,6 +3,7 @@ from urllib.error import HTTPError
 import csv
 import codecs
 import YAFIObjects
+import SimEnv
 import os
 import Util
 import finsymbols
@@ -121,6 +122,35 @@ class YAFIApiWrapper:
             price_obj_list.append(hist_price_obj)
         return price_obj_list
 
+    def getPositionHistoryActionListForDateRange(self, depot_name, portfolio_name, symbol, start_date, end_date):
+        posh_file = Util.getPositionHistoryFilename(depot_name, portfolio_name, symbol)
+        fileh = open(posh_file, "r")
+        csv_dict = Util.getDictFromCsvString(fileh.read())
+
+        pos_his_action_list = []
+        in_range = False
+        for index in csv_dict:
+            date_string = csv_dict[index][0]
+            cur_date = Util.parseDateString(date_string)
+            if not in_range:
+                if cur_date < end_date or cur_date == end_date:
+                    in_range = True
+                    action_string = csv_dict[index][1]
+                    amount = int(csv_dict[index][2])
+                    price = float(csv_dict[index][3])
+                    action = SimEnv.PositionHistoryAction(cur_date, action_string, amount, price)
+                    pos_his_action_list.append(action)
+            else:
+                if cur_date < start_date:
+                    break
+                else:
+                    action_string = csv_dict[index][1]
+                    amount = int(csv_dict[index][2])
+                    price = float(csv_dict[index][3])
+                    action = SimEnv.PositionHistoryAction(cur_date, action_string, amount, price)
+                    pos_his_action_list.append(action)
+        return pos_his_action_list
+
 
     def getCurrentStockPrice(self, symbol):
         URL1 = "http://finance.yahoo.com/d/quotes.csv?s="
@@ -156,7 +186,7 @@ class YAFIApiWrapper:
     def getSP500ComponentsForDate(self, date):
         # CARE: FAKE FOR TESTING
 
-        # return ["AAPL", "MSFT", "BAC", "NFLX", "ORCL"]
+        # return ["AAPL", "MSFT", "BAC", "NFLX", "ORCL", "AGN", "BBY", "EBAY"]
 
         # FAKE END
         if date.getYear() < 2008:
