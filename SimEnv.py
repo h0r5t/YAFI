@@ -110,7 +110,14 @@ class Portfolio:
         self.depot = depot
         self.name = name
         self.position_dict = {}
+        self.comp_history = PortfolioCompositionHistory()
         self.loadPositions()
+
+    def makeSnapshot(self):
+        self.comp_history.makeSnapshot(self)
+
+    def getCompositionHistory(self):
+        return self.comp_history
 
     def loadPositions(self):
         foldername = Util.getPortfolioFolder(self.depot.getName(), self.name)
@@ -131,37 +138,38 @@ class Portfolio:
         price = price_for_one * amount
         return (price_for_one, price)
 
-    def buy(self, symbol, amount):
+    def buy(self, symbol, amount, reason):
         price_for_one, price = self.calculatePrice(symbol, amount)
         success = self.depot.adjustCash(-price)
         if success == False:
             possibleAmount = math.floor(self.depot.getCash() / price_for_one)
-            self.buy(symbol, possibleAmount)
+            if possibleAmount > 0:
+                self.buy(symbol, possibleAmount, reason)
             return False
         if symbol in self.position_dict:
             position = self.position_dict[symbol]
-            position.buyAmount(amount, price_for_one)
+            position.buyAmount(amount, price_for_one, reason)
         else:
             self.position_dict[symbol] = PortfolioPosition(self, symbol)
-            self.position_dict[symbol].buyAmount(amount, price_for_one)
+            self.position_dict[symbol].buyAmount(amount, price_for_one, reason)
         return success
 
-    def sell(self, symbol, amount):
+    def sell(self, symbol, amount, reason):
         price_for_one, price = self.calculatePrice(symbol, amount)
         success = self.depot.adjustCash(price)
         if success == False:
             return False
         if symbol in self.position_dict:
             position = self.position_dict[symbol]
-            position.sellAmount(amount, price_for_one)
+            position.sellAmount(amount, price_for_one, reason)
         else:
             self.position_dict[symbol] = PortfolioPosition(self, symbol)
-            self.position_dict[symbol].sellAmount(amount, price_for_one)
+            self.position_dict[symbol].sellAmount(amount, price_for_one, reason)
         return success
 
 
-    def sellAll(self, symbol):
-        self.sell(symbol, self.getPosition(symbol).getCurrentAmount())
+    def sellAll(self, symbol, reason):
+        self.sell(symbol, self.getPosition(symbol).getCurrentAmount(), reason)
 
     def getPositions(self):
         # returns list of PortfolioPosition
@@ -198,6 +206,66 @@ class Portfolio:
             sum1 += val
         return sum1
 
+class PortfolioCompositionHistory:
+
+    def __init__(self):
+        self.snapshot_dict = {}
+
+    def makeSnapshot(self, portfolio):
+        portfolio_snapshot = PortfolioSnapshot(portfolio.getCurrentDate())
+        for pos in portfolio.getPositions():
+            portfolio_snapshot.addPosition(pos)
+        self.addPortfolioSnapshot(portfolio_snapshot)
+
+        self.printInfo(portfolio.getCurrentDate())
+
+    def printInfo(self, date):
+        self.snapshot_dict[date.getAsString()].printInfo()
+
+    def addPortfolioSnapshot(self, p_snap):
+        self.snapshot_dict[p_snap.getDate().getAsString()] = p_snap
+
+    def printAll(self):
+        for date_string in self.snapshot_dict:
+            print(date_string)
+            for pos_snap in self.snapshot_dict[date_string].getPositionSnapshots():
+                print("   " + pos_snap.getSymbol() + ", " + str(pos_snap.getAbsoluteAmount()) + ", " + str(pos_snap.getValue()))
+            print("")
+
+class PortfolioSnapshot:
+
+    def __init__(self, date):
+        self.date = date
+        self.position_snapshots = []
+
+    def printInfo(self):
+        print(len(self.position_snapshots))
+
+    def addPosition(self, pos):
+        self.position_snapshots.append(PositionSnapshot(pos))
+
+    def getPositionSnapshots(self):
+        return self.position_snapshots
+
+    def getDate(self):
+        return self.date
+
+class PositionSnapshot:
+
+    def __init__(self, pos):
+        self.symbol = pos.getSymbol()
+        self.abs_amount = pos.getCurrentAmount()
+        self.value = pos.getCurrentValue()[1]
+
+    def getSymbol(self):
+        return self.symbol
+
+    def getAbsoluteAmount(self):
+        return self.abs_amount
+
+    def getValue(self):
+        return self.value
+
 class PortfolioPosition:
 
     def __init__(self, portfolio, symbol):
@@ -215,15 +283,18 @@ class PortfolioPosition:
     def getSymbol(self):
         return self.symbol
 
+    def getCurrentValue(self):
+        return self.portfolio.calculatePrice(self.symbol, self.getCurrentAmount())
+
     def getCurrentAmount(self):
         return self.position_history.getCurrentAmount()
 
-    def buyAmount(self, amount, price):
-        action = PositionHistoryAction(self.portfolio.getCurrentDate(), "buy", amount, price)
+    def buyAmount(self, amount, price, reason):
+        action = PositionHistoryAction(self.portfolio.getCurrentDate(), "buy", amount, price, reason)
         self.position_history.addHistoryAction(action)
 
-    def sellAmount(self, amount, price):
-        action = PositionHistoryAction(self.portfolio.getCurrentDate(), "sell", amount, price)
+    def sellAmount(self, amount, price, reason):
+        action = PositionHistoryAction(self.portfolio.getCurrentDate(), "sell", amount, price, reason)
         self.position_history.addHistoryAction(action)
 
 class PositionHistory:
@@ -257,15 +328,17 @@ class PositionHistory:
 
 class PositionHistoryAction:
 
-    def __init__(self, date, action_string, amount, price):
+    def __init__(self, date, action_string, amount, price, reason):
         # action can be "sell" or "buy"
+        # reason: string
         self.date = date
         self.action_string = action_string
         self.amount = int(amount)
         self.price = float(price)
+        self.reason = reason
 
     def getAsString(self):
-        return("" + self.date.getAsString() + "," + self.action_string + "," + str(self.amount) + "," + str(self.price))
+        return("" + self.date.getAsString() + "," + self.action_string + "," + str(self.amount) + "," + str(self.price) + "," + self.reason)
 
     def getDate(self):
         return self.date
@@ -278,6 +351,9 @@ class PositionHistoryAction:
 
     def getPrice(self):
         return self.price
+
+    def getReason(self):
+        return self.reason
 
     def getVolume(self):
         return self.price * self.amount

@@ -15,8 +15,8 @@ class MomentumData():
     def getATR(self):
         return self.atr
 
-    def calculatePositionSize(self, depot_value):
-        return calculatePositionSize(depot_value, self.atr)
+    def calculatePositionSize(self, depot_value, risk_factor):
+        return int(calculatePositionSize(depot_value, self.atr, risk_factor))
 
 def calculatePositionSize(depot_size, atr, risk_factor=0.001):
     size = depot_size * risk_factor / atr

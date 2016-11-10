@@ -125,6 +125,7 @@ class Graph():
                         ("price", "@y"),
                         ("amount", "@amount"),
                         ("volume", "@volume"),
+                        ("reason", "@reason")
                     ],names=["posh_1", "posh_2"]
                 )
             self.plot = plotting.figure(title=self.title, x_axis_label=self.x_label, y_axis_label=self.y_label, plot_width=1200, x_axis_type="datetime", tools=[hover])
@@ -137,6 +138,7 @@ class Graph():
         self.dates_string_list_buy = []
         self.amounts_list_buy = []
         self.volume_list_buy = []
+        self.reasons_list_buy = []
         self.sizes_list_buy = []
 
         self.dates_list_sell = []
@@ -144,6 +146,7 @@ class Graph():
         self.dates_string_list_sell = []
         self.amounts_list_sell = []
         self.volume_list_sell = []
+        self.reasons_list_sell = []
         self.sizes_list_sell = []
 
     def addLabelData(self, label_data):
@@ -160,6 +163,7 @@ class Graph():
             self.amounts_list_buy.append(int(pos_his_action.getAmount()))
             self.volume_list_buy.append(float(pos_his_action.getVolume())/1000)
             self.sizes_list_buy.append(self.calculatePoshActionCircleSize(int(pos_his_action.getAmount())))
+            self.reasons_list_buy.append(pos_his_action.getReason())
 
         elif pos_his_action.getAction() == "sell":
             self.dates_list_sell.append(np.datetime64(pos_his_action.getDate().getAsString()))
@@ -168,14 +172,17 @@ class Graph():
             self.amounts_list_sell.append(int(pos_his_action.getAmount()))
             self.volume_list_sell.append(float(pos_his_action.getVolume())/1000)
             self.sizes_list_sell.append(self.calculatePoshActionCircleSize(int(pos_his_action.getAmount())))
+            self.reasons_list_sell.append(pos_his_action.getReason())
 
     def calculatePoshActionCircleSize(self, amount):
         a = amount
-        if a <= 7:
+        if a <= 5:
             return 7
-        if a >= 25:
+        if a <= 25:
+            return 15
+        if a <= 50:
             return 25
-        return a
+        return 35
 
     def activateHoverTools(self):
         source_buy = ColumnDataSource(
@@ -185,7 +192,8 @@ class Graph():
                     date_string=self.dates_string_list_buy,
                     amount=self.amounts_list_buy,
                     volume=self.volume_list_buy,
-                    sizes=self.sizes_list_buy
+                    sizes=self.sizes_list_buy,
+                    reason=self.reasons_list_buy
                 )
             )
 
@@ -196,7 +204,8 @@ class Graph():
                     date_string=self.dates_string_list_sell,
                     amount=self.amounts_list_sell,
                     volume=self.volume_list_sell,
-                    sizes=self.sizes_list_sell
+                    sizes=self.sizes_list_sell,
+                    reason=self.reasons_list_sell
                 )
             )
 

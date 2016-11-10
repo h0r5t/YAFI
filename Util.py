@@ -4,6 +4,25 @@ sys.path.append('/finsymbols')
 import datetime
 import SimEnv
 import YAFIObjects
+import time
+
+
+class Timer():
+
+    def __init__(self):
+        self.last_time = 0
+        self.times_dict = {}
+
+    def start(self):
+        self.last_time = time.time()
+
+    def addTime(self, name):
+        self.times_dict[name] = time.time() - self.last_time
+        self.last_time = time.time()
+
+    def printTimes(self):
+        for key in self.times_dict:
+            print(key + " " + str(self.times_dict[key]))
 
 def removeCommasInQuotes(text):
     index = 0
@@ -113,7 +132,7 @@ def loadPositionHistory(depot_name, portfolio_name, symbol):
         for key in csv_dict:
             api_obj = YAFIObjects.YAFIObjectPositionHistoryAction(csv_dict[key])
             date = parseDateString(api_obj.getData("date"))
-            action_obj = SimEnv.PositionHistoryAction(date, api_obj.getData("action_string"), api_obj.getData("amount"), api_obj.getData("price"))
+            action_obj = SimEnv.PositionHistoryAction(date, api_obj.getData("action_string"), api_obj.getData("amount"), api_obj.getData("price"), api_obj.getData("reason"))
             list_of_actions.append(action_obj)
         return SimEnv.PositionHistory(symbol, list_of_actions)
     else:

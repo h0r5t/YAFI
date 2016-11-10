@@ -15,6 +15,7 @@ class YAFIApiWrapper:
         self.loadSP500HistoricalData()
         self.sp500symbols = []
         self.price_history_cache = {}
+        self.symbol_date_price_hashmap = {}
 
     def cachePriceData(self, symbol):
         file_name = Util.getHistoricalDataFilename(symbol)
@@ -23,6 +24,13 @@ class YAFIApiWrapper:
         fhandle = open(file_name, "r")
         csv_dict = Util.getDictFromCsvString(fhandle.read())
         self.price_history_cache[symbol] = csv_dict
+
+        # fill hashmap with per-date data
+        date_price_dict = {}
+        for index in csv_dict:
+            date_string = csv_dict[index][0]
+            date_price_dict[date_string] = csv_dict[index]
+        self.symbol_date_price_hashmap[symbol] = date_price_dict
         return True
 
     def getAdjustedPriceDataRangeStack(self, symbol, start_date, end_date):
@@ -85,14 +93,12 @@ class YAFIApiWrapper:
             successful = self.cachePriceData(symbol)
             if not successful:
                 return None
-        csv_dict = self.price_history_cache[symbol]
-        for index in csv_dict:
-            date_string = csv_dict[index][0]
-            if Util.compareDateStrings(date_string, date.getAsString()):
-                hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(csv_dict[index])
-                return hist_price_obj
-        # return self.getRecursiveAdjPrice(5, symbol, date.getNextDayDate())
-        return None
+
+        date_price_dict = self.symbol_date_price_hashmap[symbol]
+        date_string = date.getAsString()
+        if date_string not in date_price_dict:
+            return None
+        return YAFIObjects.YAFIObjectHistoricalPrice(date_price_dict[date_string])
 
     def getHistoricalAdjustedPriceData(self, symbol, start_date, end_date, time_interval):
         d1 = str(start_date.getDay())
@@ -138,7 +144,8 @@ class YAFIApiWrapper:
                     action_string = csv_dict[index][1]
                     amount = int(csv_dict[index][2])
                     price = float(csv_dict[index][3])
-                    action = SimEnv.PositionHistoryAction(cur_date, action_string, amount, price)
+                    reason = csv_dict[index][4]
+                    action = SimEnv.PositionHistoryAction(cur_date, action_string, amount, price, reason)
                     pos_his_action_list.append(action)
             else:
                 if cur_date < start_date:
@@ -147,7 +154,8 @@ class YAFIApiWrapper:
                     action_string = csv_dict[index][1]
                     amount = int(csv_dict[index][2])
                     price = float(csv_dict[index][3])
-                    action = SimEnv.PositionHistoryAction(cur_date, action_string, amount, price)
+                    reason = csv_dict[index][4]
+                    action = SimEnv.PositionHistoryAction(cur_date, action_string, amount, price, reason)
                     pos_his_action_list.append(action)
         return pos_his_action_list
 
@@ -186,7 +194,7 @@ class YAFIApiWrapper:
     def getSP500ComponentsForDate(self, date):
         # CARE: FAKE FOR TESTING
 
-        # return ["AAPL", "MSFT", "BAC", "NFLX", "ORCL", "AGN", "BBY", "EBAY"]
+        # return ["ANF", "EBAY", "BAC"]
 
         # FAKE END
         if date.getYear() < 2008:
