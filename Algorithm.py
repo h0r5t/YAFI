@@ -1,7 +1,8 @@
-import SimEnv
-import YAFIApiWrapper
-import Util
 import Calculations
+import SimEnv
+import Util
+import YAFIApiWrapper
+
 
 class Algorithm:
 
@@ -72,7 +73,7 @@ class TestAlgorithm(Algorithm):
                 else:
                     current_amount = int(self.portfolio.getPosition(symbol).getCurrentAmount())
                     if optimal_amount > current_amount:
-                        money_left = self.portfolio.buy(symbol, int(optimal_amount - current_amount), "add")
+                        money_left = self.portfolio.buy(symbol, int(optimal_amount - current_amount), "buy")
                 if money_left == False:
                     break
 
@@ -83,6 +84,7 @@ class TestAlgorithm(Algorithm):
     def sp500IndexIsAbove200Avg(self, date):
         price_stack = self.api_wrapper.getAdjustedPriceDataRangeStackForAmountOfDays("^GSPC", date, 205)
         if price_stack is None or price_stack.getSize() < 200:
+            print(price_stack.getSize())
             return False
         current_price = float(price_stack.getLastObject().getData("adj_close"))
         avg_200 = Calculations.calculateMovingAverage(price_stack, 200)
@@ -154,7 +156,7 @@ class TestAlgorithm(Algorithm):
             # print("---")
 
         # sort momentum_dict descending by slope
-        symbols_sorted = sorted(momentum_dict, key = lambda symbol: momentum_dict[symbol].slope, reverse=True)
+        symbols_sorted = sorted(momentum_dict, key=lambda symbol: momentum_dict[symbol].slope, reverse=True)
         return (momentum_dict, symbols_sorted, symbols_under_avg, symbols_with_gap)
 
     def cleanUp(self):
@@ -170,6 +172,6 @@ if __name__ == "__main__":
     sim_env = SimEnv.SimEnv()
     algo = TestAlgorithm(sim_env, api_wrapper)
 
-    start_date = Util.UtilDate(2011, 7, 1)
-    end_date = Util.UtilDate(2011, 12, 31)
+    start_date = Util.UtilDate(2008, 11, 1)
+    end_date = Util.UtilDate(2009, 12, 31)
     sim_env.simulateAlgorithm(algo, start_date, end_date)

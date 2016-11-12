@@ -1,11 +1,9 @@
-import YAFIApiWrapper
-import Util
-import SimEnv
 import Algorithm
 import Calculations
-import time
 import Plotting
-import os
+import SimEnv
+import Util
+import YAFIApiWrapper
 
 
 class YAFI:
@@ -13,7 +11,7 @@ class YAFI:
     def __init__(self):
         api_wrapper = YAFIApiWrapper.YAFIApiWrapper()
 
-        graph = Plotting.generateBuySellGraph(api_wrapper, "test_depot", "test_portfolio", "EBAY", Util.UtilDate(2011, 10, 1), Util.UtilDate(2012, 12, 1))
+        graph = Plotting.generateBuySellGraph(api_wrapper, "test_depot", "test_portfolio", "BEN", Util.UtilDate(2009, 1, 1), Util.UtilDate(2009, 12, 31))
         graph.show()
 
 if __name__ == "__main__":

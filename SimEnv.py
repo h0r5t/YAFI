@@ -202,8 +202,9 @@ class Portfolio:
     def getCurrentValue(self):
         sum1 = 0
         for key, pos in self.position_dict.items():
-            a, val = self.calculatePrice(key, pos.getCurrentAmount())
-            sum1 += val
+            if pos.getCurrentAmount() > 0:
+                a, val = self.calculatePrice(key, pos.getCurrentAmount())
+                sum1 += val
         return sum1
 
 class PortfolioCompositionHistory:

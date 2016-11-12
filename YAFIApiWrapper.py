@@ -1,12 +1,14 @@
-from urllib.request import urlopen
-from urllib.error import HTTPError
-import csv
 import codecs
-import YAFIObjects
-import SimEnv
+import csv
 import os
+from urllib.error import HTTPError
+from urllib.request import urlopen
+
+import SimEnv
 import Util
+import YAFIObjects
 import finsymbols
+
 
 class YAFIApiWrapper:
 
@@ -38,23 +40,18 @@ class YAFIApiWrapper:
             successful = self.cachePriceData(symbol)
             if not successful:
                 return None
-        csv_dict = self.price_history_cache[symbol]
+
         stack = YAFIObjects.HistoricalAdjustedPriceRangeStack()
-        in_range = False
-        for index in csv_dict:
-            date_string = csv_dict[index][0]
-            cur_date = Util.parseDateString(date_string)
-            if not in_range:
-                if cur_date < end_date or cur_date == end_date:
-                    in_range = True
-                    hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(csv_dict[index])
-                    stack.addPriceObject(hist_price_obj)
-            else:
-                if cur_date < start_date:
-                    break
-                else:
-                    hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(csv_dict[index])
-                    stack.addPriceObject(hist_price_obj)
+        date_prices_map = self.symbol_date_price_hashmap[symbol]
+        date_counter = end_date
+        while True:
+            date_string = date_counter.getAsString()
+            if date_counter < start_date:
+                break
+            if date_string in date_prices_map:
+                hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(date_prices_map[date_string])
+                stack.addPriceObject(hist_price_obj)
+            date_counter = date_counter.getBeforeDayDate()
         return stack
 
     def getAdjustedPriceDataRangeStackForAmountOfDays(self, symbol, end_date, days):
@@ -62,30 +59,30 @@ class YAFIApiWrapper:
             successful = self.cachePriceData(symbol)
             if not successful:
                 return None
-        csv_dict = self.price_history_cache[symbol]
+
+        fail_counter = 0
         stack = YAFIObjects.HistoricalAdjustedPriceRangeStack()
-        in_range = False
-        for index in csv_dict:
-            date_string = csv_dict[index][0]
-            cur_date = Util.parseDateString(date_string)
-            if not in_range:
-                if cur_date < end_date or cur_date == end_date:
-                    in_range = True
-                    hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(csv_dict[index])
-                    stack.addPriceObject(hist_price_obj)
-            else:
-                if days == 1:
-                    break
-                else:
-                    hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(csv_dict[index])
-                    stack.addPriceObject(hist_price_obj)
-                    days -= 1
+        date_prices_map = self.symbol_date_price_hashmap[symbol]
+        date_counter = end_date
+        while True:
+            date_string = date_counter.getAsString()
+            if days == 0 or fail_counter >= 7:
+                break
+            if date_string in date_prices_map:
+                hist_price_obj = YAFIObjects.YAFIObjectHistoricalPrice(date_prices_map[date_string])
+                stack.addPriceObject(hist_price_obj)
+                days -= 1
+                fail_counter = 0
+            date_counter = date_counter.getBeforeDayDate()
+            fail_counter += 1
         return stack
 
     def getAdjustedPriceForDate(self, symbol, date, recursion_counter=7):
+        if recursion_counter == 0:
+            return None
         data = self.getAdjustedPriceDataForDate(symbol, date)
         if data is None:
-            return self.getAdjustedPriceForDate(symbol, date.getBeforeDate(1), recursion_counter-1)
+            return self.getAdjustedPriceForDate(symbol, date.getBeforeDate(1), recursion_counter - 1)
         return float(data.getData("adj_close"))
 
     def getAdjustedPriceDataForDate(self, symbol, date):
@@ -229,21 +226,21 @@ class YAFIApiWrapper:
         text = response.read()
         dict1 = Util.getDictFromCsvString(text)
 
-        list2016=[]
-        list2015=[]
-        list2014=[]
-        list2013=[]
-        list2012=[]
-        list2011=[]
-        list2010=[]
-        list2009=[]
-        list2008=[]
+        list2016 = []
+        list2015 = []
+        list2014 = []
+        list2013 = []
+        list2012 = []
+        list2011 = []
+        list2010 = []
+        list2009 = []
+        list2008 = []
         for counter in range(0, len(dict1)):
             dataLine = dict1[counter]
             symbol = dataLine[0]
 
             symbol = symbol.replace(".", "-")
-            #symbol = symbol.replace(" (Old)", "")
+            # symbol = symbol.replace(" (Old)", "")
 
             if dataLine[2] == 'X':
                 list2016.append(symbol)

@@ -5,6 +5,7 @@ import datetime
 import SimEnv
 import YAFIObjects
 import time
+import numpy as np
 
 
 class Timer():
@@ -108,7 +109,7 @@ def compareDateStrings(date_str_1, date_str_2):
     s2 = date_str_2.split("-")
     year2 = int(s2[0])
     month2 = int(s2[1])
-    day2 =int(s2[2])
+    day2 = int(s2[2])
 
     if year1 == year2 and month1 == month2 and day1 == day2:
         return True
@@ -214,32 +215,14 @@ class UtilDate():
             month_string = "0" + str(self.month)
         return("" + str(self.year) + "-" + month_string + "-" + day_string)
 
+    def getBeforeDayDate(self):
+        return self.getBeforeDate(1)
+
     def getAfterDate(self, days):
-        limit = self.month_days_dict[self.month]
-        if self.day + days > limit:
-            month = self.month + 1
-            if month == 13:
-                month = 1
-                year = self.year + 1
-            else:
-                year = self.year
-            day = days - (limit - self.day)
-            return UtilDate(year, month, day)
-        return UtilDate(self.year, self.month, self.day+days)
+        return parseDateString(str(np.datetime64(self.getAsString()) + np.timedelta64(days, 'D')))
 
     def getNextDayDate(self):
         return self.getAfterDate(1)
 
     def getBeforeDate(self, days):
-        if self.day - days < 1:
-            month = self.month - 1
-            if month == 0:
-                month = 12
-                year = self.year - 1
-            else:
-                year = self.year
-            limit = self.month_days_dict[month]
-            day = limit - (days - self.day)
-
-            return UtilDate(year, month, day)
-        return UtilDate(self.year, self.month, self.day-days)
+        return parseDateString(str(np.datetime64(self.getAsString()) - np.timedelta64(days, 'D')))
