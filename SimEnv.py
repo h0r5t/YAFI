@@ -1,21 +1,23 @@
+import math
 import os
+import shutil
+
 import Algorithm
 import Util
 import YAFIObjects
-import shutil
-import math
+
 
 class SimEnv:
 
-    def __init__(self):
-        self.current_date = None
+    def __init__(self, date):
+        self.current_date = date
 
     def setDate(self, date):
         self.current_date = date
 
     def simulateAlgorithm(self, algo, start_date, end_date):
 
-        algo.prepare()
+        algo.prepare(start_date, end_date)
 
         self.current_date = start_date
         while True:
@@ -44,7 +46,7 @@ class Depot:
         self.name = name
         self.portfolios = []
         self.info_obj = YAFIObjects.YAFIObjectDepotInfo([0])
-        self.cash = cash
+        self.starting_cash = cash
         self.loadStuff()
 
     def getName(self):
@@ -64,12 +66,12 @@ class Depot:
             self.loadPortfolios()
             self.info_obj = self.loadInfo()
             if self.info_obj is not None:
-                self.cash = float(self.info_obj.getData("cash"))
+                self.starting_cash = float(self.info_obj.getData("starting_cash"))
 
     def save(self):
         info_filename = Util.getDepotInfoFile(self.name)
         fileh = open(info_filename, "w")
-        self.info_obj = YAFIObjects.YAFIObjectDepotInfo([self.cash])
+        self.info_obj = YAFIObjects.YAFIObjectDepotInfo([self.starting_cash])
         fileh.write(self.info_obj.getAsString())
 
         for portfolio in self.portfolios:
@@ -84,19 +86,19 @@ class Depot:
         return Util.loadDepotInfo(self.name)
 
     def adjustCash(self, amount):
-        if (self.cash + amount) < 0:
+        if (self.starting_cash + amount) < 0:
             return False
-        self.cash += amount
+        self.starting_cash += amount
         return True
 
     def getCash(self):
-        return self.cash
+        return self.starting_cash
 
     def getCurrentValue(self):
         sum1 = 0
         for p in self.portfolios:
             sum1 += p.getCurrentValue()
-        return sum1 + self.cash
+        return sum1 + self.starting_cash
 
     def removePortfolio(self, portfolio):
         filename = Util.getPortfolioFolder(self.name, portfolio.getName())
@@ -105,10 +107,11 @@ class Depot:
 
 class Portfolio:
 
-    def __init__(self, sim_env, depot, name):
+    def __init__(self, sim_env, depot, name, costs_per_order):
         self.sim_env = sim_env
         self.depot = depot
         self.name = name
+        self.costs_per_order = costs_per_order
         self.position_dict = {}
         self.comp_history = PortfolioCompositionHistory()
         self.loadPositions()
@@ -132,17 +135,27 @@ class Portfolio:
     def save(self):
         for key in self.position_dict:
             self.position_dict[key].save()
-
-    def calculatePrice(self, symbol, amount):
+            
+    def calculateRawPrice(self, symbol, amount):
         price_for_one = float(self.depot.getApiWrapper().getAdjustedPriceForDate(symbol, self.getCurrentDate()))
-        price = price_for_one * amount
+        price = (price_for_one * amount)
+        return (price_for_one, price)
+
+    def calculateBuyingPrice(self, symbol, amount):
+        price_for_one = float(self.depot.getApiWrapper().getAdjustedPriceForDate(symbol, self.getCurrentDate()))
+        price = (price_for_one * amount) + self.costs_per_order
+        return (price_for_one, price)
+    
+    def calculateSellingPrice(self, symbol, amount):
+        price_for_one = float(self.depot.getApiWrapper().getAdjustedPriceForDate(symbol, self.getCurrentDate()))
+        price = (price_for_one * amount) - self.costs_per_order
         return (price_for_one, price)
 
     def buy(self, symbol, amount, reason):
-        price_for_one, price = self.calculatePrice(symbol, amount)
+        price_for_one, price = self.calculateBuyingPrice(symbol, amount)
         success = self.depot.adjustCash(-price)
         if success == False:
-            possibleAmount = math.floor(self.depot.getCash() / price_for_one)
+            possibleAmount = math.floor((self.depot.getCash() - self.costs_per_order) / price_for_one)
             if possibleAmount > 0:
                 self.buy(symbol, possibleAmount, reason)
             return False
@@ -155,7 +168,7 @@ class Portfolio:
         return success
 
     def sell(self, symbol, amount, reason):
-        price_for_one, price = self.calculatePrice(symbol, amount)
+        price_for_one, price = self.calculateSellingPrice(symbol, amount)
         success = self.depot.adjustCash(price)
         if success == False:
             return False
@@ -178,6 +191,20 @@ class Portfolio:
             if pos.getCurrentAmount() > 0:
                 list1.append(pos)
         return list1
+    
+    def getAllClosedPositions(self):
+        list1 = []
+        for pos in self.position_dict.values():
+            if pos.getCurrentAmount() <= 0:
+                list1.append(pos)
+        return list1
+    
+    def getTotalAmountOfTrades(self):
+        sum1 = 0
+        for pos in self.position_dict.values():
+            sum1 += pos.getAmountOfTrades()
+        
+        return sum1
 
     def getSymbols(self):
         # returns list of symbols only
@@ -203,7 +230,7 @@ class Portfolio:
         sum1 = 0
         for key, pos in self.position_dict.items():
             if pos.getCurrentAmount() > 0:
-                a, val = self.calculatePrice(key, pos.getCurrentAmount())
+                a, val = self.calculateRawPrice(key, pos.getCurrentAmount())
                 sum1 += val
         return sum1
 
@@ -273,19 +300,37 @@ class PortfolioPosition:
         self.portfolio = portfolio
         self.symbol = symbol
         self.position_history = Util.loadPositionHistory(portfolio.getDepotName(), portfolio.getName(), symbol)
+        self.balance_state = Util.loadBalanceState(portfolio.getDepotName(), portfolio.getName(), symbol)
+        self.trades_amount = 0
+        
+    def getBalanceState(self):
+        return self.balance_state
+    
+    def getAmountOfTrades(self):
+        return self.trades_amount
+    
+    def getPositionHistory(self):
+        return self.position_history
 
     def save(self):
+        # save posh
         filename = Util.getPositionHistoryFilename(self.portfolio.getDepotName(), self.portfolio.getName(), self.symbol)
         fileh = open(filename, "w")
         for string in self.position_history.getActionStringList():
             fileh.write(string + "\n")
+        fileh.close()
+        
+        # save bal
+        filename = Util.getBalanceStateFilename(self.portfolio.getDepotName(), self.portfolio.getName(), self.symbol)
+        fileh = open(filename, "w")
+        fileh.write(str(self.balance_state.getBalanceAmount()))
         fileh.close()
 
     def getSymbol(self):
         return self.symbol
 
     def getCurrentValue(self):
-        return self.portfolio.calculatePrice(self.symbol, self.getCurrentAmount())
+        return self.portfolio.calculateRawPrice(self.symbol, self.getCurrentAmount())
 
     def getCurrentAmount(self):
         return self.position_history.getCurrentAmount()
@@ -293,10 +338,29 @@ class PortfolioPosition:
     def buyAmount(self, amount, price, reason):
         action = PositionHistoryAction(self.portfolio.getCurrentDate(), "buy", amount, price, reason)
         self.position_history.addHistoryAction(action)
+        self.trades_amount += 1
 
     def sellAmount(self, amount, price, reason):
         action = PositionHistoryAction(self.portfolio.getCurrentDate(), "sell", amount, price, reason)
         self.position_history.addHistoryAction(action)
+        self.trades_amount += 1
+        
+class BalanceState:
+    
+    def __init__(self, amount):
+        self.amount = amount
+        
+    def getBalanceAmount(self):
+        return self.amount
+    
+    def reset(self):
+        self.amount = 0
+        
+    def plus(self, value):
+        self.amount += value
+        
+    def minus(self, value):
+        self.amount -= value
 
 class PositionHistory:
 
@@ -305,6 +369,16 @@ class PositionHistory:
         self.list_of_actions = list_of_actions
         if self.list_of_actions is None:
             self.list_of_actions = []
+            
+    def getTotalRevenue(self):
+        spending = 0
+        income = 0
+        for action in self.list_of_actions:
+            if action.getAction() == "buy":
+                spending += int(action.getVolume())
+            elif action.getAction() == "sell":
+                income += int(action.getVolume())
+        return int(income - spending)
 
     def getActionStringList(self):
         list1 = []

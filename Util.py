@@ -1,11 +1,14 @@
-import sys
-import os
-sys.path.append('/finsymbols')
 import datetime
+import os
+import sys
+import time
+
 import SimEnv
 import YAFIObjects
-import time
 import numpy as np
+
+
+sys.path.append('/finsymbols')
 
 
 class Timer():
@@ -24,6 +27,37 @@ class Timer():
     def printTimes(self):
         for key in self.times_dict:
             print(key + " " + str(self.times_dict[key]))
+            
+def getDepotValueForSimulation(year):
+    yearly_yields = {}
+    yearly_yields[1999] = 41
+    yearly_yields[2000] = -9.6
+    yearly_yields[2001] = -0.7
+    yearly_yields[2002] = -3
+    yearly_yields[2003] = 41.8
+    yearly_yields[2004] = 13.7
+    yearly_yields[2005] = 9.3
+    yearly_yields[2006] = 2.4
+    yearly_yields[2007] = 17.3
+    yearly_yields[2008] = -8.5
+    yearly_yields[2009] = 14.0
+    yearly_yields[2010] = 11.7
+    yearly_yields[2011] = -9.3
+    yearly_yields[2012] = 18.9
+    yearly_yields[2013] = 37.5
+    yearly_yields[2014] = 18.4
+    
+    value = 100000
+    year_counter = 1999
+    
+    while True:
+        if year_counter < year:
+            value = value + value * (yearly_yields[year_counter] * 0.01)
+            year_counter += 1
+        else:
+            break
+        
+    return int(value)
 
 def removeCommasInQuotes(text):
     index = 0
@@ -45,15 +79,15 @@ def getDictFromCsvString(text):
     counter = 0
     dict1[0] = []
     for element in split:
-        element = element.replace('"','')
+        element = element.replace('"', '')
         if "\n" in element:
             newline_split = element.split("\n")
             dict1[counter].append(newline_split[0])
             if newline_split[1] == "":
                 break
             else:
-                dict1[counter+1] = []
-                dict1[counter+1].append(newline_split[1])
+                dict1[counter + 1] = []
+                dict1[counter + 1].append(newline_split[1])
                 counter += 1
         else:
             dict1[counter].append(element)
@@ -64,7 +98,7 @@ def parseDateString(date_string):
     s1 = date_string.split("-")
     year1 = int(s1[0])
     month1 = int(s1[1])
-    day1 =int(s1[2])
+    day1 = int(s1[2])
 
     return UtilDate(year1, month1, day1)
 
@@ -93,6 +127,11 @@ def getPositionHistoryFilename(depot_name, portfolio_name, symbol):
     path = os.path.join(dir_path, "depots", depot_name, portfolio_name, symbol + ".posh")
     return path
 
+def getBalanceStateFilename(depot_name, portfolio_name, symbol):
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    path = os.path.join(dir_path, "depots", depot_name, portfolio_name, symbol + ".bal")
+    return path
+
 def getPortfolioFolder(depot_name, portfolio_name):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     path = os.path.join(dir_path, "depots", depot_name, portfolio_name)
@@ -104,7 +143,7 @@ def compareDateStrings(date_str_1, date_str_2):
     s1 = date_str_1.split("-")
     year1 = int(s1[0])
     month1 = int(s1[1])
-    day1 =int(s1[2])
+    day1 = int(s1[2])
 
     s2 = date_str_2.split("-")
     year2 = int(s2[0])
@@ -138,6 +177,14 @@ def loadPositionHistory(depot_name, portfolio_name, symbol):
         return SimEnv.PositionHistory(symbol, list_of_actions)
     else:
         return SimEnv.PositionHistory(symbol, [])
+    
+def loadBalanceState(depot_name, portfolio_name, symbol):
+    filename = getBalanceStateFilename(depot_name, portfolio_name, symbol)
+    if os.path.exists(filename):
+        fileh = open(filename, "r")
+        value = int(fileh.read())
+        return SimEnv.BalanceState(value)
+    return SimEnv.BalanceState(0)
 
 def getFileList(path):
     return os.listdir(path)
@@ -223,6 +270,9 @@ class UtilDate():
 
     def getNextDayDate(self):
         return self.getAfterDate(1)
+    
+    def getNextYearDate(self):
+        return UtilDate(self.year + 1, self.month, self.day)
 
     def getBeforeDate(self, days):
         return parseDateString(str(np.datetime64(self.getAsString()) - np.timedelta64(days, 'D')))

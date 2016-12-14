@@ -10,8 +10,8 @@ class YAFI:
 
     def __init__(self):
         api_wrapper = YAFIApiWrapper.YAFIApiWrapper()
-
-        graph = Plotting.generateBuySellGraph(api_wrapper, "test_depot", "test_portfolio", "BEN", Util.UtilDate(2009, 1, 1), Util.UtilDate(2009, 12, 31))
+        
+        graph = Plotting.generateBuySellGraph(api_wrapper, "test_depot", "test_portfolio", "AA", Util.UtilDate(2014, 1, 1), Util.UtilDate(2014, 12, 31))
         graph.show()
 
 if __name__ == "__main__":

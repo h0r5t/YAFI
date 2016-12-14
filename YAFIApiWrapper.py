@@ -1,5 +1,3 @@
-import codecs
-import csv
 import os
 from urllib.error import HTTPError
 from urllib.request import urlopen
@@ -79,6 +77,7 @@ class YAFIApiWrapper:
 
     def getAdjustedPriceForDate(self, symbol, date, recursion_counter=7):
         if recursion_counter == 0:
+            print("ERROR ERROR ERROR " + symbol + " " + date.getAsString())
             return None
         data = self.getAdjustedPriceDataForDate(symbol, date)
         if data is None:
@@ -191,7 +190,7 @@ class YAFIApiWrapper:
     def getSP500ComponentsForDate(self, date):
         # CARE: FAKE FOR TESTING
 
-        # return ["ANF", "EBAY", "BAC"]
+        # return ["AAPL", "MSFT", "BAC"]
 
         # FAKE END
         if date.getYear() < 2008:

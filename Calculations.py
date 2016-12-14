@@ -1,7 +1,9 @@
+import math
+
+from pylab import *
 from scipy.optimize import curve_fit
 from scipy.stats import linregress
-from pylab import *
-import math
+
 
 class MomentumData():
 
@@ -94,7 +96,7 @@ def getAdjustedAnnualizedSlope(price_stack):
     array_log = np.log(prices_array)
     xdata = np.linspace(0, 89, 90)
     slope, intercept, r_value, p_value, std_err = linregress(xdata, array_log)
-    r_squared = r_value**2
+    r_squared = r_value ** 2
     normalized = np.exp(slope)
     annualized = (np.power(normalized, 250) - 1) * 100
     adj_annualized_slope = annualized * r_squared
